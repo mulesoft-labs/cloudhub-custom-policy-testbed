@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xsd:schema xmlns="http://www.mulesoft.org/schema/mule/api-platform-gw"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:core="http://www.mulesoft.org/schema/mule/core"
+            xmlns:policy="http://www.mulesoft.org/schema/mule/policy"
+            xmlns:throttling-gw="http://www.mulesoft.org/schema/mule/throttling-gw"
+            targetNamespace="http://www.mulesoft.org/schema/mule/api-platform-gw"
+            attributeFormDefault="unqualified"
+            elementFormDefault="qualified">
+
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+    <xsd:import namespace="http://www.springframework.org/schema/beans"
+                schemaLocation="http://www.springframework.org/schema/beans/spring-beans-3.1.xsd"/>
+    <xsd:import namespace="http://www.springframework.org/schema/context"
+                schemaLocation="http://www.springframework.org/schema/context/spring-context-3.1.xsd"/>
+    <xsd:import schemaLocation="http://www.mulesoft.org/schema/mule/core/current/mule.xsd"
+                namespace="http://www.mulesoft.org/schema/mule/core"/>
+    <xsd:import namespace="http://www.mulesoft.org/schema/mule/throttling-gw"
+                schemaLocation="http://www.mulesoft.org/schema/mule/throttling-gw/current/mule-throttling-gw.xsd"/>
+    <xsd:import namespace="http://www.mulesoft.org/schema/mule/policy"
+                schemaLocation="http://www.mulesoft.org/schema/mule/policy/current/mule-policy.xsd"/>
+
+    <xsd:element name="sla-based-algorithm" substitutionGroup="throttling-gw:algorithm" type="slaBasedAlgorithmType">
+        <xsd:annotation>
+            <xsd:documentation>
+                Throttling policy configuration.
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+
+    <xsd:complexType name="slaBasedAlgorithmType">
+        <xsd:complexContent>
+            <xsd:extension base="throttling-gw:throttlingAlgorithmType">
+                <xsd:attribute name="apiId" type="xsd:string" use="optional"/>
+                <xsd:attribute name="apiVersionId" type="xsd:string" use="optional"/>
+                <xsd:attribute name="clientIdExpression" type="xsd:string" use="required"/>
+                <xsd:attribute name="clientSecretExpression" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:element name="client-store" substitutionGroup="core:abstract-extension" type="oauth2ClientStoreType">
+        <xsd:annotation>
+            <xsd:documentation>
+                Mule Security Module Client Store
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+
+    <xsd:element name="client-security-provider" substitutionGroup="core:abstract-extension" type="clientSecurityProviderType">
+        <xsd:annotation>
+            <xsd:documentation>
+                Security Provider that validates clients against API Platform
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+
+    <xsd:complexType name="oauth2ClientStoreType">
+        <xsd:complexContent>
+            <xsd:extension base="core:abstractExtensionType">
+                <xsd:attribute name="id" type="xsd:string" use="required"/>
+                <xsd:attribute name="apiId" type="xsd:string" use="optional"/>
+                <xsd:attribute name="apiVersionId" type="xsd:string" use="optional"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="clientSecurityProviderType">
+        <xsd:complexContent>
+            <xsd:extension base="core:abstractExtensionType">
+                <xsd:attribute name="id" type="xsd:string" use="required"/>
+                <xsd:attribute name="apiId" type="xsd:string" use="optional"/>
+                <xsd:attribute name="apiVersionId" type="xsd:string" use="optional"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:element name="validate-client" substitutionGroup="core:abstract-global-intercepting-message-processor" type="validateClientType">
+        <xsd:annotation>
+            <xsd:documentation>
+                Validate API Platform registered client
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+
+    <xsd:complexType name="validateClientType">
+        <xsd:complexContent>
+            <xsd:extension base="core:baseMessageFilterType">
+                <xsd:attribute name="clientId" type="xsd:string" use="required">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            Client ID to use during enforcement
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="clientSecret" type="xsd:string" use="optional">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            Client Secret to use during enforcement
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:element name="register-as" type="registerAsType"
+                 substitutionGroup="core:abstract-filter">
+        <xsd:annotation>
+            <xsd:documentation>
+                Auto-register endpoint in API Manager automatically upon startup.
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+    <xsd:complexType name="registerAsType">
+        <xsd:complexContent>
+            <xsd:extension base="core:abstractFilterType">
+                <xsd:attribute name="api-ref" type="xsd:string" use="optional">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            The bean id of the API Definition.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="apikit-ref" type="xsd:string" use="optional">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            A reference to the APIKit configuration.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:element name="api" type="apiType"
+                 substitutionGroup="core:abstract-extension">
+        <xsd:annotation>
+            <xsd:documentation>
+                API definition to be used in conjuntion with register-as.
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+    <xsd:complexType name="apiType">
+        <xsd:complexContent>
+            <xsd:extension base="core:abstractExtensionType">
+                <xsd:sequence>
+                    <xsd:element name="description" type="xsd:string" minOccurs="0"/>
+                    <xsd:element name="tag" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+                </xsd:sequence>
+                <xsd:attribute name="id" type="xsd:string" use="required">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            The Id of the API used to reference it from the register-as component.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="apiName" type="xsd:string" use="required">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            The Name of the API as configured in API Manager. If the
+                            API does not exists, it will be created.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="version" type="xsd:string" use="required">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            The version of the API
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="apikitRef" type="xsd:string" use="optional">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            A reference to the APIKit configuration.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:element name="client" substitutionGroup="policy:abstract-data-item" type="clientType">
+        <xsd:annotation>
+            <xsd:documentation>
+                API Platform Registered Application
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+
+    <xsd:complexType name="clientType">
+        <xsd:complexContent>
+            <xsd:extension base="policy:abstractDataItemType">
+                <xsd:attribute name="secret" type="xsd:string" use="required"/>
+                <xsd:attribute name="name" type="xsd:string" use="optional"/>
+                <xsd:attribute name="description" type="xsd:string" use="optional"/>
+                <xsd:attribute name="redirectUri" type="xsd:string" use="optional"/>
+                <xsd:attribute name="timePeriod" type="xsd:integer" use="optional"/>
+                <xsd:attribute name="maxRequests" type="xsd:integer" use="optional"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:element name="api-pointcut" type="apiPointcutType" substitutionGroup="policy:abstract-flow-pointcut">
+        <xsd:annotation>
+            <xsd:documentation>
+                Returns a flow based on the provided API name and API version.
+            </xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+    <xsd:complexType name="apiPointcutType">
+        <xsd:complexContent>
+            <xsd:extension base="policy:abstractFlowPointcutType">
+                <xsd:attribute name="apiName" type="xsd:string" use="required"/>
+                <xsd:attribute name="apiVersion" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+</xsd:schema>

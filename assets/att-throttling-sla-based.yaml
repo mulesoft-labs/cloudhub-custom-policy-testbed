@@ -1,0 +1,110 @@
+---
+id: att-throttling-sla-based
+name: AT&amp;T Throttling - SLA based
+description: Throttles the number of messages per time period processed by an API. Queues any messages beyond the maximum for later processing.
+category: Quality of service
+type: system
+hasContracts: true
+standalone: true
+requiresConnectivity: false
+providedCharacteristics:
+  - Requires Authentication
+  - Throttled
+requiredCharacteristics: []
+configuration:
+  - propertyName: authURL
+    name: Auth URL
+    description: End Point URL for authentication
+    type: string
+    defaultValue: "https://adrianhsieh-mock-auth.cloudhub.io/1.0/MockAuth"
+    optional: false
+    sensitive: false
+    allowMultiple: false
+  - propertyName: appUser
+    name: appUser
+    description: App user Id
+    type: string
+    defaultValue: "testuser"
+    optional: false
+    sensitive: false
+    allowMultiple: false
+  - propertyName: appPassword
+    name: appPassword
+    description: App user password
+    type: string
+    defaultValue: "testpassword"
+    optional: false
+    sensitive: false
+    allowMultiple: false
+  - propertyName: referenceAPIId
+    name: Reference API Id
+    description: Id of reference API for setting up SLA Tier
+    type: int
+    defaultValue: 6150
+    minimumValue: 0
+    maximumValue: 2147483647
+    optional: false
+    sensitive: false
+    allowMultiple: false
+  - propertyName: referenceAPIVersionId
+    name: Reference API Version Id
+    description: Id of reference API version for setting up SLA Tier
+    type: int
+    defaultValue: 6128
+    minimumValue: 0
+    maximumValue: 2147483647
+    optional: false
+    sensitive: false
+    allowMultiple: false
+  - propertyName: goldId
+    name: Gold Id
+    description: Id for Gold level service
+    type: string
+    defaultValue: "60f6d7e2e19445bf94eb76c99eee47d6"
+    optional: false
+    sensitive: false
+    allowMultiple: false
+  - propertyName: goldSecret
+    name: Gold Secret
+    description: Secret for Gold level service
+    type: string
+    defaultValue: "b60fb8ef531845d787D07142394501A2"
+    optional: false
+    sensitive: false
+    allowMultiple: false
+  - propertyName: silverId
+    name: Silver Id
+    description: Id for Silver level service
+    type: string
+    defaultValue: "daf26240b51e4c819fc994f00b361f73"
+    optional: false
+    sensitive: false
+    allowMultiple: false
+  - propertyName: silverSecret
+    name: Silver Secret
+    description: Secret for Silver level service
+    type: string
+    defaultValue: "ab95141a810a4b28A34587ABDE55DB22"
+    optional: false
+    sensitive: false
+    allowMultiple: false
+  - propertyName: delayTimeInMillis
+    name: Delay Time in Milliseconds
+    description: The amount of time that responses will be delayed after the SLA has been exceeded.
+    type: int
+    defaultValue: 10000
+    minimumValue: 0
+    maximumValue: 2147483647
+    optional: true
+    sensitive: false
+    allowMultiple: false
+  - propertyName: delayAttempts
+    name: Delay Attempts
+    description: How many attempts to process the request will be made before finally giving up
+    type: int
+    minimumValue: 0
+    maximumValue: 2147483647
+    defaultValue: 5
+    optional: true
+    sensitive: false
+    allowMultiple: false

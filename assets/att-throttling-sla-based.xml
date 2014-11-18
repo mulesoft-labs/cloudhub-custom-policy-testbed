@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policy online="true"
+        xmlns="http://www.mulesoft.org/schema/mule/policy"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw"
+        xmlns:throttling-gw="http://www.mulesoft.org/schema/mule/throttling-gw"
+        xmlns:https="http://www.mulesoft.org/schema/mule/https"
+        xmlns:http="http://www.mulesoft.org/schema/mule/http"
+        xmlns:json="http://www.mulesoft.org/schema/mule/json"
+        xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+        xmlns:mule="http://www.mulesoft.org/schema/mule/core"
+        xsi:schemaLocation="http://www.mulesoft.org/schema/mule/policy http://www.mulesoft.org/schema/mule/policy/current/mule-policy.xsd
+        	  http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+              http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd
+              http://www.mulesoft.org/schema/mule/throttling-gw http://www.mulesoft.org/schema/mule/throttling-gw/current/mule-throttling-gw.xsd
+			  http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+			  http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/https/current/mule-https.xsd
+			  http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+
+  <throttling-gw:policy enableStatistics="true" notifyEveryExceededRequest="false" id="{{policyId}}-gold-policy">
+      <throttling-gw:delay-response delayTimeInMillis="{{delayTimeInMillis}}" delayAttempts="{{delayAttempts}}"/>
+      <api-platform-gw:sla-based-algorithm apiId="{{referenceAPIId}}" apiVersionId="{{referenceAPIVersionId}}" clientIdExpression="{{goldId}}" clientSecretExpression="{{goldSecret}}"/>
+  </throttling-gw:policy>
+
+  <throttling-gw:policy enableStatistics="true" notifyEveryExceededRequest="false" id="{{policyId}}-silver-policy">
+      <throttling-gw:delay-response delayTimeInMillis="{{delayTimeInMillis}}" delayAttempts="{{delayAttempts}}"/>
+      <api-platform-gw:sla-based-algorithm apiId="{{referenceAPIId}}" apiVersionId="{{referenceAPIVersionId}}" clientIdExpression="{{silverId}}" clientSecretExpression="{{silverSecret}}"/>
+  </throttling-gw:policy>
+
+  <mule:processor-chain name="failedRouting" doc:name="Processor Chain">
+      <mule:set-payload value="#[['auth_status':'failed']]" doc:name="Set Payload"/>
+      <json:object-to-json-transformer doc:name="Object to JSON"/>
+      <http:response-builder status="401" contentType="application/json" doc:name="HTTP Response Builder"/>
+  </mule:processor-chain>
+
+  <before>
+    <mule:enricher source="#[payload]" target="#[flowVars['auth-results']]" doc:name="Message Enricher">
+        <mule:processor-chain doc:name="Processor Chain">
+            <mule:set-payload value="#[['appUser':'testuser', 'appPassword':'testpassword', 'serviceProvider':['client_id':'test-client', 'auth_code':'yyyy']]]" doc:name="Set Payload"/>
+            <json:object-to-json-transformer doc:name="Object to JSON"/>
+<!--             <https:outbound-endpoint exchange-pattern="request-response" method="POST" address="https://adrianhsieh-mock-auth.cloudhub.io/${version}/MockAuth" mimeType="application/json" doc:name="HTTP"/> -->
+            <https:outbound-endpoint exchange-pattern="request-response" method="POST" address="{{authURL}}" mimeType="application/json" doc:name="HTTP"/>
+            <mule:byte-array-to-string-transformer doc:name="Byte Array to String"/>
+            <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+            <mule:expression-component doc:name="set-http-status"><![CDATA[#[payload.put('http.status', message.inboundProperties['http.status'])]]]></mule:expression-component>
+        </mule:processor-chain>
+    </mule:enricher>
+    <!-- First, check for auth -->
+    <mule:message-filter onUnaccepted="failedRouting" doc:name="Message">
+        <mule:expression-filter expression="#[flowVars['auth-results'].get('http.status') == '200']"/>
+    </mule:message-filter>
+    <!-- Second, check for level -->
+    <mule:choice doc:name="Choice">
+        <mule:when expression="#[flowVars['auth-results'].get('auth_level').toLowerCase() == 'gold']">
+            <throttling-gw:throttle throttling-policy-ref="{{policyId}}-gold-policy" />
+        </mule:when>
+        <mule:otherwise>
+            <throttling-gw:throttle throttling-policy-ref="{{policyId}}-silver-policy" />
+        </mule:otherwise>
+    </mule:choice>
+    
+  </before>
+
+  <pointcut>
+    <endpoint regex="{{endpointUri}}" />
+  </pointcut>
+
+</policy>

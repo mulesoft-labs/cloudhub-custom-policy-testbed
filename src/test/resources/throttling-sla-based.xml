@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<policy online="true"
+        xmlns="http://www.mulesoft.org/schema/mule/policy"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw"
+        xmlns:throttling-gw="http://www.mulesoft.org/schema/mule/throttling-gw"
+        xsi:schemaLocation="http://www.mulesoft.org/schema/mule/policy http://www.mulesoft.org/schema/mule/policy/current/mule-policy.xsd
+              http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd
+              http://www.mulesoft.org/schema/mule/throttling-gw http://www.mulesoft.org/schema/mule/throttling-gw/current/mule-throttling-gw.xsd">
+
+  <throttling-gw:policy enableStatistics="true" notifyEveryExceededRequest="false" id="{{policyId}}-throttling-policy">
+      <throttling-gw:delay-response delayTimeInMillis="{{delayTimeInMillis}}" delayAttempts="{{delayAttempts}}"/>
+      <api-platform-gw:sla-based-algorithm clientIdExpression="{{clientIdExpression}}"
+                                           clientSecretExpression="{{clientSecretExpression}}"/>
+  </throttling-gw:policy>
+
+  <before>
+    <throttling-gw:throttle throttling-policy-ref="{{policyId}}-throttling-policy" />
+  </before>
+
+  <data>
+      <collection name="clients">
+          {{#contracts}}
+          <api-platform-gw:client id="{{clientId}}" secret="{{clientSecret}}"
+                                  maxRequests="{{tierMaximumRequests}}" timePeriod="{{tierTimePeriodInMilliseconds}}"/>
+          {{/contracts}}
+      </collection>
+  </data>
+
+  <pointcut>
+    <endpoint regex="{{endpointUri}}" />
+  </pointcut>
+
+</policy>

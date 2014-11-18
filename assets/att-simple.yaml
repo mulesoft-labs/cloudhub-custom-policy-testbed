@@ -1,0 +1,20 @@
+---
+id: att-throttling-sla-based
+name: AT&amp;T Throttling - SLA based
+description: Throttles the number of messages per time period processed by an API. Queues any messages beyond the maximum for later processing.
+category: Quality of service
+type: system
+hasContracts: true
+standalone: true
+requiresConnectivity: false
+providedCharacteristics:
+  - Requires Authentication
+requiredCharacteristics: []
+configuration:
+  - propertyName: authURL
+    name: Auth URL
+    description: End Point URL for authentication
+    type: string
+    optional: false
+    sensitive: false
+    allowMultiple: false

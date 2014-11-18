@@ -1,0 +1,50 @@
+---
+id: throttling-sla-based
+name: Throttling - SLA based
+description: Throttles the number of messages per time period processed by an API. Queues any messages beyond the maximum for later processing.
+category: Quality of service
+type: system
+hasContracts: true
+standalone: true
+requiresConnectivity: false
+providedCharacteristics:
+  - Throttled
+  - Client ID required
+requiredCharacteristics: []
+configuration:
+  - propertyName: clientIdExpression
+    name: Client ID Expression
+    description: Mule Expression to be used to extract the Client ID from API requests.
+    type: expression
+    defaultValue: "#[message.inboundProperties['http.query.params']['client_id']]"
+    optional: true
+    sensitive: false
+    allowMultiple: false
+  - propertyName: clientSecretExpression
+    name: Client Secret Expression
+    description: Mule Expression to be used to extract the Client Secret from API requests
+    type: expression
+    defaultValue: "#[message.inboundProperties['http.query.params']['client_secret']]"
+    optional: true
+    sensitive: false
+    allowMultiple: false
+  - propertyName: delayTimeInMillis
+    name: Delay Time in Milliseconds
+    description: The amount of time that responses will be delayed after the SLA has been exceeded.
+    type: int
+    defaultValue: 10000
+    minimumValue: 0
+    maximumValue: 2147483647
+    optional: true
+    sensitive: false
+    allowMultiple: false
+  - propertyName: delayAttempts
+    name: Delay Attempts
+    description: How many attempts to process the request will be made before finally giving up
+    type: int
+    minimumValue: 0
+    maximumValue: 2147483647
+    defaultValue: 5
+    optional: true
+    sensitive: false
+    allowMultiple: false

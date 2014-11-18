@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:context="http://www.springframework.org/schema/context" xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:https="http://www.mulesoft.org/schema/mule/https" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.5.1"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd
+http://www.mulesoft.org/schema/mule/https http://www.mulesoft.org/schema/mule/https/current/mule-https.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <context:property-placeholder location="mule.properties"/>
+    <flow name="custom-policy-testbedFlow2" doc:name="custom-policy-testbedFlow2">
+        <processor-chain name="failedRouting" doc:name="Processor Chain">
+            <set-payload value="#[['auth_status':'failed']]" doc:name="Set Payload"/>
+            <json:object-to-json-transformer doc:name="Object to JSON"/>
+            <http:response-builder status="401" contentType="application/json" doc:name="HTTP Response Builder"/>
+        </processor-chain>
+    </flow>
+    <flow name="custom-policy-testbedFlow1" doc:name="custom-policy-testbedFlow1">
+        <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8081" path="test" doc:name="HTTP"/>
+        <enricher source="#[payload]" target="#[flowVars['auth-results']]" doc:name="Message Enricher">
+            <processor-chain doc:name="Processor Chain">
+                <set-payload value="#[['appUser':'testuser', 'appPassword':'testpassword', 'serviceProvider':['client_id':'test-client', 'auth_code':'yyyy']]]" doc:name="Set Payload"/>
+                <json:object-to-json-transformer doc:name="Object to JSON"/>
+                <https:outbound-endpoint exchange-pattern="request-response" method="POST" address="https://adrianhsieh-mock-auth.cloudhub.io/${version}/MockAuth" mimeType="application/json" doc:name="HTTP"/>
+                <logger level="INFO" doc:name="whole-message"/>
+                <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+                <json:json-to-object-transformer returnClass="java.util.HashMap" doc:name="JSON to Object"/>
+                <expression-component doc:name="set-http-status"><![CDATA[#[payload.put('http.status', message.inboundProperties['http.status'])]]]></expression-component>
+                <logger level="INFO" message="RAW #[payload]" doc:name="mock auth response"/>
+            </processor-chain>
+        </enricher>
+        <message-filter onUnaccepted="failedRouting" doc:name="Message">
+            <expression-filter expression="#[flowVars['auth-results'].get('http.status') == '200']"/>
+        </message-filter>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars['auth-results'].get('auth_level').toLowerCase() == 'gold']">
+                <logger message="Gold #[payload]" level="INFO" doc:name="Gold"/>
+            </when>
+            <otherwise>
+                <logger message="Silver #[payload]" level="INFO" doc:name="Silver"/>
+            </otherwise>
+        </choice>
+    </flow>
+</mule>
